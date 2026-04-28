@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <!-- ============================================= -->
+    <!-- META & JUDUL HALAMAN                          -->
+    <!-- ============================================= -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="WebGIS Fasilitas Publik Kota Seattle menggunakan Leaflet.js dan data GeoJSON dari OpenStreetMap">
+    <title>WebGIS Seattle - Fasilitas Publik</title>
+
+    <!-- ============================================= -->
+    <!-- LEAFLET CSS - Library peta interaktif         -->
+    <!-- Dipanggil dari CDN (Content Delivery Network) -->
+    <!-- ============================================= -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin="" />
+
+    <!-- ============================================= -->
+    <!-- CSS KUSTOM - Mengatur tampilan peta Full Screen -->
+    <!-- ============================================= -->
+    <style>
+        /* Reset margin dan padding default browser agar peta benar-benar full screen */
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Mengatur elemen peta agar Full Screen (100vh = 100% tinggi viewport) */
+        #map {
+            width: 100%;
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ============================================= -->
+    <!-- ELEMEN DIV UNTUK MENAMPILKAN PETA             -->
+    <!-- ID "map" akan digunakan oleh Leaflet          -->
+    <!-- ============================================= -->
+    <div id="map"></div>
+
+    <!-- ============================================= -->
+    <!-- LEAFLET JS - Library utama untuk peta         -->
+    <!-- Harus dipanggil SETELAH Leaflet CSS           -->
+    <!-- ============================================= -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+
+    <!-- ============================================= -->
+    <!-- SCRIPT UTAMA - Inisialisasi peta dan data     -->
+    <!-- ============================================= -->
+    <script>
+        // =============================================
+        // 1. INISIALISASI PETA (Map Initialization)
+        //    - Membuat instance peta Leaflet
+        //    - Pusat peta: Downtown Seattle [47.6062, -122.3321]
+        //    - Zoom level: 15 (cukup detail untuk melihat fasilitas)
+        // =============================================
+        var map = L.map('map').setView([47.6062, -122.3321], 15);
+
+        // =============================================
+        // 2. MENAMBAHKAN BASEMAP (Tile Layer)
+        //    - Menggunakan basemap dari OpenStreetMap
+        //    - maxZoom: 19 (batas zoom maksimum yang didukung)
+        //    - attribution: kredit sumber peta (wajib untuk OSM)
+        // =============================================
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // =============================================
+        // 3. FUNGSI onEachFeature
+        //    - Fungsi ini dipanggil untuk SETIAP feature dalam GeoJSON
+        //    - Parameter "feature" berisi data atribut (properties)
+        //    - Parameter "layer" berisi objek layer pada peta
+        //    - Menampilkan popup berisi nilai atribut "name"
+        //    - Jika "name" kosong/null, tampilkan "Fasilitas Tanpa Nama"
+        // =============================================
+        function onEachFeature(feature, layer) {
+            // Mengecek apakah feature memiliki properties
+            if (feature.properties) {
+                // Mengambil nilai atribut "name"
+                // Jika null atau kosong, gunakan teks default
+                var nama = feature.properties.name || "Fasilitas Tanpa Nama";
+
+                // Mengikat (bindPopup) popup ke layer
+                // Popup akan muncul saat marker/fitur diklik
+                layer.bindPopup("<b>" + nama + "</b>");
+            }
+        }
+
+        // =============================================
+        // 4. MEMUAT DATA GEOJSON DENGAN FETCH API
+        //    - Path: 'Data/WebGIS_Seattle_FasilitasPublik.geojson'
+        //    - PENTING: Folder 'Data' menggunakan huruf D besar
+        //      sesuai dengan struktur folder project
+        // =============================================
+        fetch('Data/WebGIS_Seattle_FasilitasPublik.geojson')
+            .then(function(response) {
+                // Mengecek apakah response dari server berhasil (status 200)
+                if (!response.ok) {
+                    throw new Error('Gagal memuat file GeoJSON: ' + response.statusText);
+                }
+                // Mengkonversi response menjadi objek JavaScript (JSON)
+                return response.json();
+            })
+            .then(function(data) {
+                // =============================================
+                // 5. MENAMBAHKAN DATA GEOJSON KE PETA
+                //    - L.geoJSON() membaca data GeoJSON dan menampilkannya
+                //    - onEachFeature: menjalankan fungsi popup untuk tiap fitur
+                //    - Marker default Leaflet digunakan secara otomatis
+                //      untuk data bertipe Point
+                //    - .addTo(map) menambahkan layer ke peta
+                // =============================================
+                L.geoJSON(data, {
+                    onEachFeature: onEachFeature
+                }).addTo(map);
+            })
+            .catch(function(error) {
+                // Menampilkan pesan error di console browser
+                // Buka Developer Tools (F12) > tab Console untuk melihat error
+                console.error('Error memuat GeoJSON:', error);
+            });
+    </script>
+
+</body>
+</html>
